@@ -4,7 +4,7 @@ from torchvision.transforms import v2
 import os
 import h5py
 from sklearn.preprocessing import LabelEncoder
-
+import numpy as np
 
 
 # ###############################################################################
@@ -19,7 +19,7 @@ class HyperspectralDataset(Dataset):
         self.classes=[]
         self.labels = []  
         self.label_encoder = LabelEncoder()
-      
+        self.populate_file_paths_and_classes()
                     
         self.transforms_dict = {
             'resize': self.resize_transform          
@@ -33,6 +33,18 @@ class HyperspectralDataset(Dataset):
         with h5py.File(hdf5_path, 'r') as hdf5_file:
             data=hdf5_file['dataset'][:]
             data = torch.tensor(data)
+            
+            metadata_group = hdf5_file['metadata']
+            metadata = {}
+            for key, value in metadata_group.items():
+                if isinstance(value, h5py.Dataset):
+                    metadata[key] = value[:]
+                    if metadata[key].dtype.type is np.bytes_:
+                        metadata[key] = [item.decode('utf-8') for item in metadata[key]]
+                else:
+                    metadata[key] = metadata_group.attrs[key]
+                    if isinstance(metadata[key], bytes):
+                        metadata[key] = metadata[key].decode('utf-8')
        
         label_str = self.labels[idx]
         label = torch.tensor(self.label_encoder.transform([label_str])[0], dtype=torch.long)
@@ -42,7 +54,7 @@ class HyperspectralDataset(Dataset):
         if self.transform:
             data = self.apply_transform(data)
         
-        return data.float(), label
+        return data.float(), label,metadata
 
     def apply_transform(self, data):
         if self.transform in self.transforms_dict:

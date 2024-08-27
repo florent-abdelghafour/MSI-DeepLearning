@@ -134,7 +134,8 @@ if  check_dir(dataset_path):
                                                 'image_paths': [],  # Store image paths
                                                 'nb_bands': num_bands,
                                                 'img type': pil_mode_to_np_type.get(image.mode),
-                                                'class' : class_folder                                                   
+                                                'class' : class_folder    ,
+                                                 'default_bands': [685, 525, 430]                                               
                                             }
                         
                     dataset_info[base_name]['wavelengths'].append(band_wavelength)
@@ -145,7 +146,7 @@ for image_info in dataset_info.values():
     
     
 
-output_directory =   "F:\\Leticia\\citrus_data\\hdf5"    
+output_directory =   "F:\\Leticia\\citrus_data\\data_loader\\hdf5"    
        
 if not os.path.exists(output_directory):
     os.makedirs(output_directory)
@@ -166,13 +167,25 @@ for image_info in dataset_info.values():
         datacube=create_multispectral_array(image_info)
         datacube = np.transpose(datacube, (2, 0, 1))
         
-        
-        with h5py.File(output_file, 'w') as hdf5_file:       
+            
+        with h5py.File(output_file, 'w') as hdf5_file:
             hdf5_file.create_dataset('dataset', data=datacube)
+            metadata_group = hdf5_file.create_group('metadata')
+            for key, value in image_info.items():
+                if isinstance(value, list):
+                    # Convert lists to string arrays
+                    metadata_group.create_dataset(key, data=np.array(value, dtype='S'))
+                elif isinstance(value, str):
+                    # Convert strings to byte arrays
+                    metadata_group.attrs[key] = value.encode('utf-8')
+                elif isinstance(value, (int, float)):
+                    # Save numbers directly as attributes
+                    metadata_group.attrs[key] = value
+                else:
+                    # For any other types, convert to string
+                    metadata_group.attrs[key] = str(value).encode('utf-8')
 
-      
         print(f"HDF5 file {image_info['name']} created successfully.")
-        
  
     
 
