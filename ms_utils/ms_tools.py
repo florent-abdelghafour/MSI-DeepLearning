@@ -5,66 +5,50 @@ import re
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 import pickle
+from collections import defaultdict
+
+def extract_numeric_part(string):
+    match = re.search(r'\d+', string)
+    return int(match.group()) if match else None
 
 
-def extract_numeric_part(s):
-    # Use regular expressions to extract numeric part from a string
-    match = re.search(r'\d+', s)
-    if match:
-        return int(match.group())
-    else:
-        return None
-
-
-def make_ms_dataset(base_directory, ext='.jpg'):
-    image_info_dict = {}
-
-    # Loop through the folders
+def make_ms_dataset(base_directory, ext='.tiff'):
+    image_info_dict = defaultdict(lambda: {
+        'name': None,
+        'wavelengths': [],
+        'width': None,
+        'height': None,
+        'image_paths': [],
+        'nb_bands': None
+    })
+    
     for folder_name in os.listdir(base_directory):
         folder_path = os.path.join(base_directory, folder_name)
         
-        
-        # Check if it's a directory
         if os.path.isdir(folder_path):
-            # Extract the numeric part from the folder name as an integer
             wavelength = extract_numeric_part(folder_name)
-
-        # Loop through the files in the folder
-        for filename in os.listdir(folder_path):
-            # Split the filename into name and extension parts
-            name, ext = os.path.splitext(filename)
+            if wavelength is None:
+                print(f"Skipping folder: {folder_name} (no numeric part)")
+                continue
             
-
-            # Check if the file is a JPEG image
-            if ext.lower() == ext.lower():
-                # Extract the image name (before the first period in the base name)
-                base_name = name.split('.')[0]
-
-                # Get the image file path
-                image_path = os.path.join(folder_path, filename)
-
-                # If dimensions are not yet determined, read them from the first image
-                image = Image.open(image_path)
-
-                # Create a dictionary for metadata if it doesn't exist
-                if base_name not in image_info_dict:
-
-                    width, height = image.size
-                    image.close()
-
-                    image_info_dict[base_name] = {
-                        'name': base_name,
-                        'wavelengths': [],
-                        'width': width,  # Store dimensions only once per set of wavelengths
-                        'height': height,
-                        'image_paths': [],  # Store image paths
-                        'nb_bands': len(os.listdir(base_directory))
-                    }
-
-                # Append the wavelength as an integer
-                image_info_dict[base_name]['wavelengths'].append(wavelength)
-                image_info_dict[base_name]['image_paths'].append(image_path)
-
+            for filename in os.listdir(folder_path):
+                name, file_ext = os.path.splitext(filename)
+                if file_ext.lower() == ext.lower():
+                    base_name = name.split('.')[0]
+                    image_path = os.path.join(folder_path, filename)
+                    
+                    if image_info_dict[base_name]['name'] is None:
+                        # Get dimensions only for the first image of the group
+                        with Image.open(image_path) as img:
+                            width, height = img.size
+                        image_info_dict[base_name]['name'] = base_name
+                        image_info_dict[base_name]['width'] = width
+                        image_info_dict[base_name]['height'] = height
+                        image_info_dict[base_name]['nb_bands'] = len(os.listdir(folder_path))
+                    
+                    image_info_dict[base_name]['wavelengths'].append(wavelength)
+                    image_info_dict[base_name]['image_paths'].append(image_path)
+    
     return list(image_info_dict.values())
 
 
