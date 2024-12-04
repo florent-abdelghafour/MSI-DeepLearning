@@ -1,9 +1,7 @@
-import numpy as np
 import os
 from PIL import Image
 
 from ms_utils.msi_image_utils import *
-import h5py
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -67,8 +65,6 @@ if __name__ == "__main__":
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
               
-    
-   
         
     with ProcessPoolExecutor() as executor:
         # Initialize tqdm progress bar with total number of tasks

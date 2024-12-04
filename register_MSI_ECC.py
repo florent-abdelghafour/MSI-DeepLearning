@@ -89,7 +89,6 @@ criteria = (cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 1000, 1e-5)
 for class_folder, image_info_list in class_image_info.items():
     for i, image_data in enumerate(image_info_list):
         try:
-            if i < 1:
                 metadata = image_info_list[i]
                 print(metadata['name'])
                 multispectral_array = create_multispectral_array(image_data)
@@ -162,44 +161,40 @@ for class_folder, image_info_list in class_image_info.items():
                 sorted_registered_bands = [registered_bands[i] for i in sorted_indices]
                 registered_image = np.dstack(sorted_registered_bands)
                 
-                # Compute the mean channel intensity before registration (raw image)
-                mean_channel_before = np.mean(multispectral_array, axis=2)
+                # # Compute the mean channel intensity before registration (raw image)
+                # mean_channel_before = np.mean(multispectral_array, axis=2)
 
-                # Compute the mean channel intensity after registration (registered image)
-                mean_channel_after = np.mean(registered_image, axis=2)
+                # # Compute the mean channel intensity after registration (registered image)
+                # mean_channel_after = np.mean(registered_image, axis=2)
 
-                # Displaying the comparison
-                plt.figure(figsize=(12, 6))
+                # # Displaying the comparison
+                # plt.figure(figsize=(12, 6))
 
-                # Before registration
-                plt.subplot(1, 2, 1)
-                plt.imshow(mean_channel_before, cmap='gray')
-                plt.title('Mean Channel Before Registration')
-                plt.axis('off')
+                # # Before registration
+                # plt.subplot(1, 2, 1)
+                # plt.imshow(mean_channel_before, cmap='gray')
+                # plt.title('Mean Channel Before Registration')
+                # plt.axis('off')
 
-                # After registration
-                plt.subplot(1, 2, 2)
-                plt.imshow(mean_channel_after, cmap='gray')
-                plt.title('Mean Channel After Registration')
-                plt.axis('off')
+                # # After registration
+                # plt.subplot(1, 2, 2)
+                # plt.imshow(mean_channel_after, cmap='gray')
+                # plt.title('Mean Channel After Registration')
+                # plt.axis('off')
 
-                plt.tight_layout()
-                plt.show()
-                
+                # plt.tight_layout()
+                # plt.show()
             
-            
-            
+                image_name = image_data['name']
+                par_fold, org = os.path.split(base_directory)
+                for j, band in enumerate(sorted_bands):
+                    regis_band = sorted_registered_bands[j]
 
-            # image_name = image_data['name']
-            # par_fold, org = os.path.split(base_directory)
-            # for j, band in enumerate(sorted_bands):
-            #     regis_band = sorted_registered_bands[j]
-
-            #     output_folder = join(par_fold, 'registered_ecc', org, f"{band}NM")
-            #     if not os.path.exists(output_folder):
-            #         os.makedirs(output_folder)
-            #     output_path = join(output_folder, f"{image_name}_REG_{band}nm.tiff")
-            #     cv.imwrite(output_path, regis_band)
+                    output_folder = join(par_fold, 'registered_ecc', org, f"{band}NM")
+                    if not os.path.exists(output_folder):
+                        os.makedirs(output_folder)
+                    output_path = join(output_folder, f"{image_name}_REG_{band}nm.tiff")
+                    cv.imwrite(output_path, regis_band)
 
         except:
             im_id = metadata['name']
