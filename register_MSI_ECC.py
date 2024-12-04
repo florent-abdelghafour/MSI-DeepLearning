@@ -48,7 +48,7 @@ lens_channel = {
     }
  }
 
-base_directory = "D:\\data_citrus\\data_raw"
+base_directory = "/home/localadmin/data_citrus/data_raw"
 class_image_info = {}
 class_folders = [folder for folder in os.listdir(base_directory) if os.path.isdir(os.path.join(base_directory, folder))]
 for class_folder in class_folders:
@@ -161,40 +161,21 @@ for class_folder, image_info_list in class_image_info.items():
                 sorted_registered_bands = [registered_bands[i] for i in sorted_indices]
                 registered_image = np.dstack(sorted_registered_bands)
                 
-                # # Compute the mean channel intensity before registration (raw image)
-                # mean_channel_before = np.mean(multispectral_array, axis=2)
-
-                # # Compute the mean channel intensity after registration (registered image)
-                # mean_channel_after = np.mean(registered_image, axis=2)
-
-                # # Displaying the comparison
-                # plt.figure(figsize=(12, 6))
-
-                # # Before registration
-                # plt.subplot(1, 2, 1)
-                # plt.imshow(mean_channel_before, cmap='gray')
-                # plt.title('Mean Channel Before Registration')
-                # plt.axis('off')
-
-                # # After registration
-                # plt.subplot(1, 2, 2)
-                # plt.imshow(mean_channel_after, cmap='gray')
-                # plt.title('Mean Channel After Registration')
-                # plt.axis('off')
-
-                # plt.tight_layout()
-                # plt.show()
+        
             
                 image_name = image_data['name']
                 par_fold, org = os.path.split(base_directory)
                 for j, band in enumerate(sorted_bands):
                     regis_band = sorted_registered_bands[j]
 
-                    output_folder = join(par_fold, 'registered_ecc', org, f"{band}NM")
+                    output_folder = join(par_fold, 'registered_ecc',org,class_folder, f"{band}NM")
                     if not os.path.exists(output_folder):
                         os.makedirs(output_folder)
                     output_path = join(output_folder, f"{image_name}_REG_{band}nm.tiff")
                     cv.imwrite(output_path, regis_band)
+                    
+                    print(output_folder)
+                    print(output_path)
 
         except:
             im_id = metadata['name']

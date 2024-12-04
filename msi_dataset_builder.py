@@ -7,7 +7,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
 if __name__ == "__main__":
-    dataset_path ="D:\\data_citrus\\data_raw"
+    dataset_path ='/home/localadmin/data_citrus/data_raw'
 
     dataset_info = {}                                                              # Initialize an empty dictionary to store information
 
@@ -60,7 +60,7 @@ if __name__ == "__main__":
         
     
 
-    output_directory =   "D:\\data_citrus\\data_cube"
+    output_directory =   '/home/localadmin/data_citrus/datacube'
         
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
