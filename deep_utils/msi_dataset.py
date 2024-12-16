@@ -3,11 +3,6 @@ import h5py
 from torch.utils.data import Dataset, DataLoader
 import torch
 
-import os
-import h5py
-import torch
-from torch.utils.data import Dataset, DataLoader
-
 
 class MSI_Dataset(Dataset):
     def __init__(self, root_dir, transform=None):
@@ -84,22 +79,22 @@ class MSI_Dataset(Dataset):
     
     
     
-if __name__ == "__main__":
-    dataset_root = "D:\\data_citrus\\data_cube"
-    dataset = MSI_Dataset(root_dir=dataset_root)
-    # Set the maximum number of batches to load
-    max_batches = 2
+# if __name__ == "__main__":
+#     dataset_root = "D:\\data_citrus\\data_cube"
+#     dataset = MSI_Dataset(root_dir=dataset_root)
+#     # Set the maximum number of batches to load
+#     max_batches = 2
 
-    # Create DataLoader
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
+#     # Create DataLoader
+#     dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
 
-# Iterate through DataLoader
-for i, batch in enumerate(dataloader):
-    datacubes, labels = batch
-    print(f"Batch {i + 1}:")
-    print(f"  Datacubes shape: {datacubes.shape}")
-    print(f"  Labels: {labels}")
+# # Iterate through DataLoader
+# for i, batch in enumerate(dataloader):
+#     datacubes, labels = batch
+#     print(f"Batch {i + 1}:")
+#     print(f"  Datacubes shape: {datacubes.shape}")
+#     print(f"  Labels: {labels}")
     
-    if i + 1 == max_batches:  # Stop after max_batches
-        break
+#     if i + 1 == max_batches:  # Stop after max_batches
+#         break
 

@@ -93,8 +93,7 @@ pil_mode_to_np_type = {
 }
 ###############################################################################
 
-dataset_path ="F:\\Leticia\\citrus_data\\data_raw"
-
+dataset_path ="D:\\data_citrus\\data_raw"
 dataset_info = {}                                                              # Initialize an empty dictionary to store information
 
 if  check_dir(dataset_path):
@@ -113,7 +112,8 @@ if  check_dir(dataset_path):
                  
                   for filename in os.listdir(band_path):                 
                     name, ext = os.path.splitext(filename)                     # Split the filename into name and extension parts
-                    base_name = name.split('.')[0]                   
+                    base_name = name.split('.')[0]     
+                    print(base_name)              
                     image_path = os.path.join(band_path, filename)
                     
                     if is_supported_image(image_path):
@@ -142,50 +142,56 @@ if  check_dir(dataset_path):
                     dataset_info[base_name]['image_paths'].append(image_path)
 
 for image_info in dataset_info.values():
-    image_info['image_paths'] = sorted(image_info['image_paths'], key=lambda path: extract_numeric_part(path))         
-    
+    image_info['image_paths'] = sorted(image_info['image_paths'], key=lambda path: extract_numeric_part(path))     
+ 
+
     
 
-output_directory =   "F:\\Leticia\\citrus_data\\data_loader\\hdf5"    
+# output_directory =   os.path.join(os.path.dirname(dataset_path), "data_cube_bad")
        
-if not os.path.exists(output_directory):
-    os.makedirs(output_directory)
+# if not os.path.exists(output_directory):
+#     os.makedirs(output_directory)
               
     
-for image_info in dataset_info.values():
+# for image_info in dataset_info.values():
         
-        output_class_directory = os.path.join(output_directory,image_info['class'])
-        if not os.path.exists(output_class_directory):
-            os.makedirs(output_class_directory)
+#         output_class_directory = os.path.join(output_directory,image_info['class'])
+#         if not os.path.exists(output_class_directory):
+#             os.makedirs(output_class_directory)
             
-        output_img_directory = os.path.join(output_class_directory,image_info['name'])
-        if not os.path.exists(output_img_directory):
-            os.makedirs(output_img_directory)
+       
+            
+#         output_img_directory = os.path.join(output_class_directory,image_info['name'])
+#         if not os.path.exists(output_img_directory):
+#             os.makedirs(output_img_directory)
         
-        output_file = os.path.join(output_img_directory, f"{image_info['name']}.h5")
-               
-        datacube=create_multispectral_array(image_info)
-        datacube = np.transpose(datacube, (2, 0, 1))
+       
+        
+#         output_file = os.path.join(output_img_directory, f"{image_info['name']}.h5")
+#         print(output_file)   
+            
+#         datacube=create_multispectral_array(image_info)
+#         datacube = np.transpose(datacube, (2, 0, 1))
         
             
-        with h5py.File(output_file, 'w') as hdf5_file:
-            hdf5_file.create_dataset('dataset', data=datacube)
-            metadata_group = hdf5_file.create_group('metadata')
-            for key, value in image_info.items():
-                if isinstance(value, list):
-                    # Convert lists to string arrays
-                    metadata_group.create_dataset(key, data=np.array(value, dtype='S'))
-                elif isinstance(value, str):
-                    # Convert strings to byte arrays
-                    metadata_group.attrs[key] = value.encode('utf-8')
-                elif isinstance(value, (int, float)):
-                    # Save numbers directly as attributes
-                    metadata_group.attrs[key] = value
-                else:
-                    # For any other types, convert to string
-                    metadata_group.attrs[key] = str(value).encode('utf-8')
+#         with h5py.File(output_file, 'w') as hdf5_file:
+#             hdf5_file.create_dataset('dataset', data=datacube)
+#             metadata_group = hdf5_file.create_group('metadata')
+#             for key, value in image_info.items():
+#                 if isinstance(value, list):
+#                     # Convert lists to string arrays
+#                     metadata_group.create_dataset(key, data=np.array(value, dtype='S'))
+#                 elif isinstance(value, str):
+#                     # Convert strings to byte arrays
+#                     metadata_group.attrs[key] = value.encode('utf-8')
+#                 elif isinstance(value, (int, float)):
+#                     # Save numbers directly as attributes
+#                     metadata_group.attrs[key] = value
+#                 else:
+#                     # For any other types, convert to string
+#                     metadata_group.attrs[key] = str(value).encode('utf-8')
 
-        print(f"HDF5 file {image_info['name']} created successfully.")
+#         print(f"HDF5 file {image_info['name']} created successfully.")
  
     
 

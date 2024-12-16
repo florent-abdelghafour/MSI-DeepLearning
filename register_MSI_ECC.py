@@ -47,8 +47,8 @@ lens_channel = {
         'default_channels': [11, 8, 13, 9, 12, 10]       # Default channels for all lenses
     }
  }
-
-base_directory = "/home/localadmin/data_citrus/data_raw"
+# "/home/localadmin/data_citrus/data_raw"
+base_directory = "D:\\data_citrus\\data_raw"
 class_image_info = {}
 class_folders = [folder for folder in os.listdir(base_directory) if os.path.isdir(os.path.join(base_directory, folder))]
 for class_folder in class_folders:
@@ -88,6 +88,7 @@ criteria = (cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 1000, 1e-5)
 
 for class_folder, image_info_list in class_image_info.items():
     for i, image_data in enumerate(image_info_list):
+      if i<10:
         try:
                 metadata = image_info_list[i]
                 print(metadata['name'])
@@ -171,7 +172,7 @@ for class_folder, image_info_list in class_image_info.items():
                     output_folder = join(par_fold, 'registered_ecc',org,class_folder, f"{band}NM")
                     if not os.path.exists(output_folder):
                         os.makedirs(output_folder)
-                    output_path = join(output_folder, f"{image_name}_REG_{band}nm.tiff")
+                    output_path = join(output_folder, f"{image_name}_REG.ARW_{band}nm.tiff")
                     cv.imwrite(output_path, regis_band)
                     
                     print(output_folder)

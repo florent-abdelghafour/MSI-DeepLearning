@@ -1,7 +1,8 @@
 import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
-from os.path import join
+from os.path import join, exists
+import os
 from ms_utils import *  
 from concurrent.futures import ThreadPoolExecutor
 
@@ -28,7 +29,7 @@ lens_channel = {
     }
 }
 
-def process_image_data(image_data, bands_nm, master_band, lens_channel, complementary_positions, complementary_band, warp_mode, warp_matrix, criteria, base_directory):
+def process_image_data(image_data, bands_nm, master_band, lens_channel, complementary_positions, complementary_band, warp_mode, criteria, base_directory):
     try:
         # Extract metadata from the image_data (image_data contains the metadata itself)
         metadata = image_data
@@ -82,6 +83,7 @@ def process_image_data(image_data, bands_nm, master_band, lens_channel, compleme
                 
                 # Register the other bands using ECC (Enhanced Correlation Coefficient)
                 channel = lenses_array[:, :, j]
+                warp_matrix = np.eye(3, 3, dtype=np.float32)  # Ensure a new warp matrix for each thread
                 (cc, warp_matrix) = cv.findTransformECC(master_channel, channel, warp_matrix, warp_mode, criteria)
                 registered_band = cv.warpPerspective(channel, warp_matrix, (master_channel.shape[1], master_channel.shape[0]), flags=cv.INTER_LINEAR + cv.WARP_INVERSE_MAP)
                 
@@ -120,7 +122,7 @@ def process_image_data(image_data, bands_nm, master_band, lens_channel, compleme
         for j, band in enumerate(sorted_bands):
             regis_band = sorted_registered_bands[j]
 
-            # Create the output directory for saving the registered bands
+            # Ensure unique output folder for each band processing
             output_folder = join(par_fold, 'registered_ecc', org, f"{band}NM")
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder)
@@ -167,7 +169,6 @@ if __name__ == "__main__":
 
     # Warp parameters
     warp_mode = cv.MOTION_HOMOGRAPHY
-    warp_matrix = np.eye(3, 3, dtype=np.float32)
     criteria = (cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 1000, 1e-5)
 
     # Use ThreadPoolExecutor for parallel processing of class folders
@@ -175,7 +176,7 @@ if __name__ == "__main__":
         futures = []
         for class_folder, image_info_list in class_image_info.items():
             for image_data in image_info_list:
-                 futures.append(executor.submit(process_image_data, image_data, bands_nm, master_band, lens_channel, complementary_positions, complementary_band, warp_mode, warp_matrix, criteria, base_directory))
+                 futures.append(executor.submit(process_image_data, image_data, bands_nm, master_band, lens_channel, complementary_positions, complementary_band, warp_mode, criteria, base_directory))
 
         # Wait for all futures to complete
         for future in futures:
