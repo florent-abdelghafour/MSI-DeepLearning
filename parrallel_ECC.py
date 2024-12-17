@@ -62,6 +62,7 @@ def process_image_data(image_data, generic_params):
         base_directory = generic_params['base_directory']
         output_folder_base = generic_params['output_folder_base']
         
+        print(image_data['name'])
         # Load multispectral array
         multispectral_array = create_multispectral_array(image_data)
         wv = image_data['wavelengths']
@@ -104,7 +105,14 @@ def process_image_data(image_data, generic_params):
         for j, band in enumerate(bands_nm):
             if band != master_band:
                 channel = lenses_array[:, :, j]
-                (cc, warp_matrix) = cv.findTransformECC(master_channel, channel, warp_matrix, warp_mode, criteria)
+                try:
+                    # Attempt ECC alignment
+                    (cc, warp_matrix) = cv.findTransformECC(master_channel, channel, warp_matrix, warp_mode, criteria)
+                except cv.error:
+                    # Mark as failed and reset warp_matrix
+                    print(f"ECC alignment failed for band {band}. Using the original band.")
+                    warp_matrix = np.eye(3, 3, dtype=np.float32)
+                    
                 registered_band = cv.warpPerspective(channel, warp_matrix, (master_channel.shape[1], master_channel.shape[0]), flags=cv.INTER_LINEAR + cv.WARP_INVERSE_MAP)
 
                 
@@ -128,59 +136,70 @@ def process_image_data(image_data, generic_params):
         sorted_indices = np.argsort(list_bands)
         sorted_bands = np.sort(list_bands)
         sorted_registered_bands = [registered_bands[i] for i in sorted_indices]
-        registered_image = np.dstack(sorted_registered_bands)
 
         # Save registered bands
         image_name = image_data['name']
         par_fold, org = os.path.split(base_directory)
         for j, band in enumerate(sorted_bands):
-            output_folder = join(par_fold, output_folder_base, org, image_data['class_folder'], f"{band}NM")
+            output_folder = join(par_fold, output_folder_base, org, class_folder, f"{band}NM")
             os.makedirs(output_folder, exist_ok=True)
             output_path = join(output_folder, f"{image_name}_REG.ARW_{band}nm.tiff")
             cv.imwrite(output_path, sorted_registered_bands[j])
 
         print(f"Processed image: {image_name}")
-        return registered_image
+        return True
 
     except Exception as e:
         print(f"Image {image_data['name']} failed: {e}")
-        return None
+        return False
 
 
 # Main parallel processing
 if __name__ == "__main__":
     base_directory = generic_params['base_directory']
+    
     class_image_info = {}
-    # Load dataset
-    class_folders = [folder for folder in os.listdir(base_directory)
-                     if os.path.isdir(os.path.join(base_directory, folder))]
+    class_folders = [folder for folder in os.listdir(base_directory) if os.path.isdir(os.path.join(base_directory, folder))]
+    for class_folder in class_folders:
+        # Directly call make_ms_dataset with the class folder path
+        image_info_list = make_ms_dataset(os.path.join(base_directory, class_folder), ext='.TIFF')
+        # Store the image_info_list in the dictionary
+        class_image_info[class_folder] = image_info_list
+    
     for class_folder in class_folders:
         image_info_list = make_ms_dataset(os.path.join(base_directory, class_folder), ext='.TIFF')
         class_image_info[class_folder] = image_info_list
 
     failed_images = []
-    # Parallel processing using ThreadPoolExecutor
-    with ThreadPoolExecutor() as executor:
-        futures = []
-        for class_folder, image_info_list in class_image_info.items():
+
+    for class_folder, image_info_list in class_image_info.items():
+        print(f"Processing class folder: {class_folder}")
+
+        # Parallel processing using ThreadPoolExecutor for the images in the current class folder
+        with ThreadPoolExecutor() as executor:
+            futures = []
+
             for image_data in image_info_list:
                 futures.append(executor.submit(process_image_data, image_data, generic_params))
 
-        for future in futures:
-            registered_image = future.result()
-            if registered_image is None:
-                # If registered_image is None, add the failure details to the failed_images list
-                failed_image_info = {
-                    'image_name': image_data['name'],
-                    'image_path': join(base_directory, image_data['class_folder'], image_data['name']),
-                }
-                failed_images.append(failed_image_info)
-            else:
-                # Optionally, you can print success
-                print(f"Successfully processed {image_data['name']}.")
+            for future in futures:
+                success = future.result()
+                if not success:
+                    # If registered_image is None, add the failure details to the failed_images list
+                    failed_image_info = {
+                        'image_name': image_data['name'],
+                        'image_path': join(base_directory, class_folder, image_data['name']),
+                    }
+                    failed_images.append(failed_image_info)
+                else:
+                    # Optionally, you can print success
+                    print(f"Successfully processed {image_data['name']}.")
 
     # After all threads are done, log failed images to a file
     if failed_images:
         with open("D:\\data_citrus\\registered_ecc\\failed_images_reg_ecc_log.txt", "w") as log_file:
             for failed_image in failed_images:
                 log_file.write(f"Failed image: {failed_image['image_name']}, Path: {failed_image['image_path']}\n")
+    
+    
+    
