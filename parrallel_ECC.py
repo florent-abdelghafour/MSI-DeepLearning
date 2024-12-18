@@ -197,7 +197,8 @@ if __name__ == "__main__":
 
     # After all threads are done, log failed images to a file
     if failed_images:
-        with open("D:\\data_citrus\\registered_ecc\\failed_images_reg_ecc_log.txt", "w") as log_file:
+        log_path = os.path.join(base_directory, "failed_images_reg_ecc_log.txt")
+        with open(log_path, "w") as log_file:
             for failed_image in failed_images:
                 log_file.write(f"Failed image: {failed_image['image_name']}, Path: {failed_image['image_path']}\n")
     

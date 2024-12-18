@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-dataset_root = "D:\\data_citrus\\registered_ecc\\data_cube"
+dataset_root = "D:\\data_citrus\\data_cube"
 
 output_directory =   os.path.join(os.path.dirname(dataset_root), "data_mean")
 if not os.path.exists(output_directory):
