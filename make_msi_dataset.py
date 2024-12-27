@@ -174,7 +174,7 @@ for image_info in dataset_info.values():
         
             
         with h5py.File(output_file, 'w') as hdf5_file:
-            hdf5_file.create_dataset('dataset', data=datacube)
+            hdf5_file.create_dataset('datacube', data=datacube)
             metadata_group = hdf5_file.create_group('metadata')
             for key, value in image_info.items():
                 if isinstance(value, list):

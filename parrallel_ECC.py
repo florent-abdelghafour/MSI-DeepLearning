@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 # Parameters independent of threads
 generic_params = {
     "bands_nm": [710, 630, 850, 650, 735, 685],
-    "master_band": 630,
+    "master_band": 735,
     "lens_channel": {
         'Q1': {'ch': [0, 7, 11], 'wv': [405, 570, 710]},
         'Q2': {'ch': [4, 8], 'wv': [525, 630]},
@@ -141,7 +141,7 @@ def process_image_data(image_data, generic_params):
         image_name = image_data['name']
         par_fold, org = os.path.split(base_directory)
         for j, band in enumerate(sorted_bands):
-            output_folder = join(par_fold, output_folder_base, org, class_folder, f"{band}NM")
+            output_folder = join(par_fold, output_folder_base, org,str(master_band), class_folder, f"{band}NM")
             os.makedirs(output_folder, exist_ok=True)
             output_path = join(output_folder, f"{image_name}_REG.ARW_{band}nm.tiff")
             cv.imwrite(output_path, sorted_registered_bands[j])

@@ -112,7 +112,7 @@ def save_datacube(image_info,output_directory):
     
         
     with h5py.File(output_file, 'w') as hdf5_file:
-        hdf5_file.create_dataset('dataset', data=datacube)
+        hdf5_file.create_dataset('datacube', data=datacube)
         metadata_group = hdf5_file.create_group('metadata')
         for key, value in image_info.items():
             if isinstance(value, list):
