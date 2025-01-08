@@ -162,8 +162,6 @@ for image_info in dataset_info.values():
         if not os.path.exists(output_img_directory):
             os.makedirs(output_img_directory)
         
-       
-        
         output_file = os.path.join(output_img_directory, f"{image_info['name']}.h5")
         print(output_file)   
             

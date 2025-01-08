@@ -166,8 +166,6 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
     # Show the plot
     plt.show(block=False)    
         
-        
-        
 
     return train_losses, val_losses,val_r2_scores
             

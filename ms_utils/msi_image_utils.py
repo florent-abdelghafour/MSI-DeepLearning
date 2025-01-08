@@ -115,6 +115,8 @@ def save_datacube(image_info,output_directory):
         hdf5_file.create_dataset('datacube', data=datacube)
         metadata_group = hdf5_file.create_group('metadata')
         for key, value in image_info.items():
+            if key =='image_paths':
+                continue
             if isinstance(value, list):
                 # Convert lists to string arrays
                 metadata_group.create_dataset(key, data=np.array(value, dtype='S'))

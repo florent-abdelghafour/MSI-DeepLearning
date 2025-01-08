@@ -7,7 +7,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
 if __name__ == "__main__":
-    dataset_path ="D:\\data_citrus\\registered_ecc\\data_raw"
+    dataset_path ="D:\\data_citrus\\data_raw"
     # '/home/localadmin/data_citrus/data_raw'
 
     dataset_info = {}                                                              # Initialize an empty dictionary to store information
@@ -55,11 +55,13 @@ if __name__ == "__main__":
                             
                         dataset_info[base_name]['wavelengths'].append(band_wavelength)
                         dataset_info[base_name]['image_paths'].append(image_path)
-
-        for image_info in dataset_info.values():
-            image_info['image_paths'] = sorted(image_info['image_paths'], key=lambda path: extract_numeric_part(path))         
         
-    
+        for name,image_info in zip(dataset_info.keys(),dataset_info.values()):
+            image_info['image_paths'] = sorted(image_info['image_paths'], key=lambda path: extract_numeric_part(path))  
+            print(image_info)  
+            print(name) 
+           
+        
 
     output_directory =   os.path.join(os.path.dirname(dataset_path), "data_cube")
         
