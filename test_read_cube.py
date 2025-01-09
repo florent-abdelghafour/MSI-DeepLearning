@@ -27,7 +27,7 @@ for path in list_path:
                     band_wavelength =extract_numeric_part(band_path)              # extract numeric part of band folder name -> find wavelengh       
                     
                     for i,filename in enumerate(os.listdir(band_path)): 
-                       if i<30:                 
+                       if i<100:                 
                         name, ext = os.path.splitext(filename)                     # Split the filename into name and extension parts
                         base_name = name.split('.')[0]                   
                         image_path = os.path.join(band_path, filename)
@@ -107,14 +107,14 @@ for  (image_info_1, image_info_2) in zip(dict1.values(), dict2.values()):
 
         print(f"HDF5 file for {image_info['name']} created successfully.")
         
-        mean_image = np.mean(datacube, axis=0)  # Shape: (H, W)
+        mean_image = np.sum(datacube, axis=0)  # Shape: (H, W)
     
         # Save the image
         output_path =   os.path.join(os.path.dirname(output_directory), "data_mean")
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         save_path = os.path.join(output_path, f"{image_info['name']}_mean.png")
-        plt.imsave(save_path,mean_image,cmap='viridis')
+        plt.imsave(save_path,mean_image,cmap='grey')
         print(f"Saved: {save_path}")
     
     

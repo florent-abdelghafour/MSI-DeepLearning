@@ -21,7 +21,10 @@ class MSI_Dataset(Dataset):
         self.labels = []  
         self.label_encoder = LabelEncoder()
         self.data_info = self.build_data_info()
-     
+
+        self.transforms_dict = {
+            'resize': self.resize_transform          
+        }
         
     def build_data_info(self):
         """
@@ -103,9 +106,6 @@ class MSI_Dataset(Dataset):
             #         metadata[key] = dataset[()].astype(str).tolist()
             #     else:
             #         metadata[key] = dataset[()]
-            #     # Apply transformation if specified
-            #     if self.transform:
-            #         datacube = self.transform(datacube)
         
         return datacube, label     
     
