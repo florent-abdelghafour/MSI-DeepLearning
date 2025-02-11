@@ -10,21 +10,36 @@ class MSI_Dataset(Dataset):
         """
         Initialize the dataset.
         
-        Args:
-            root_dir (str): Path to the root directory containing the dataset (organized by class folders).
-            transform (callable, optional): Transform to apply to the data. Defaults to None.
+      Args:
+            root_dir (str): Path to the root directory containing the dataset.
+            transforms (list or str, optional): A single transform or a list of transform names to apply sequentially.
+            transform_args (dict, optional): Dictionary of arguments for each transform.
+                Example:
+                    {
+                        "resize": {"size": (800, 800)},
+                        "vegetation_index_transform": {"target_channels": [2, 6, 9]}
+                    }
         """
         self.root_dir = root_dir
-        self.transform = transform
-        self.transform_args = transform_args if isinstance(transform_args, dict) else {}
+        
         self.classes=[]
         self.labels = []  
         self.label_encoder = LabelEncoder()
         self.data_info = self.build_data_info()
+        
+        if transform is None:
+            self.transform = []
+        elif isinstance(transform, list):
+            self.transforms = transform
+        else:
+            self.transform = [transform]
 
         self.transforms_dict = {
-            'resize': self.resize_transform          
+            'resize': self.resize_transform ,
+            'v index': self.vegetation_index_transform,        
         }
+        
+    
         
     def build_data_info(self):
         """
@@ -110,24 +125,78 @@ class MSI_Dataset(Dataset):
         return datacube, label     
     
     
-    def apply_transform(self, data):
-        if self.transform in self.transforms_dict:
-            transform_function = self.transforms_dict[self.transform]
-            return transform_function(data)
-        else:
-            raise ValueError(f"Transform '{self.transform}' is not supported.")
-            
-    def resize_transform(self,data,size=None):
-        if size is None:
-            size = self.transform_args.get('size', (1200,1200))   
+    # def apply_transform(self, data):
+    #     if self.transform in self.transforms_dict:
+    #         transform_function = self.transforms_dict[self.transform]
+    #         return transform_function(data)
+    #     else:
+    #         raise ValueError(f"Transform '{self.transform}' is not supported.")
         
-        # Convert numpy array to tensor
-
-        # Apply resize transformation
-        resized_data = torch.nn.functional.interpolate(data.unsqueeze(0), size=size, mode='bilinear', align_corners=False)
-        resized_data = resized_data.squeeze(0)
-             
+    def apply_transforms(self, data):
+        """
+        Apply each transform in the self.transforms list in order.
+        
+        Args:
+            data (Tensor): The input tensor to be transformed.
+            
+        Returns:
+            Tensor: The transformed tensor.
+        """
+        for transform in self.transforms:
+            if transform in self.transforms_dict:
+                # Retrieve any additional arguments for this transform, if provided.
+                args = self.transform_args.get(transform, {})
+                transform_function = self.transforms_dict[transform]
+                data = transform_function(data, **args)
+            else:
+                raise ValueError(f"Transform '{transform}' is not supported.")
+        return data
+    
+            
+    def resize_transform(self, data, size=(1200, 1200)):
+        """
+        Resize transform using PyTorch's interpolate function.
+        
+        Args:
+            data (Tensor): Input tensor to resize.
+            size (tuple, optional): The target size (height, width). Default is (1200, 1200).
+            
+        Returns:
+            Tensor: The resized tensor.
+        """
+        # Add a batch dimension required for interpolation.
+        data = data.unsqueeze(0)
+        resized_data = torch.nn.functional.interpolate(data, size=size, mode='bilinear', align_corners=False)
+        resized_data = resized_data.squeeze(0)  # Remove the batch dimension.
         return resized_data
+    
+    def vegetation_index_transform(self, data, target_channels):
+        """
+        Select specific channels (bands) for computing vegetation indices from a 4D tensor.
+        
+        Args:
+            data (Tensor): Input tensor with shape (B, C, H, W).
+            target_channels (list): A list of channel indices to select (e.g., [2, 6, 9]).
+            
+        Returns:
+            Tensor: A 4D tensor with the selected channels.
+            
+        Raises:
+            ValueError: If any channel in target_channels is out of range.
+        """
+
+        if not isinstance(target_channels, list):
+            raise ValueError("target_channels must be provided as a list of channel indices.")
+        
+        num_channels = data.shape[1]
+        # Check that each requested channel index is within the valid range.
+        for idx in target_channels:
+            if idx < 0 or idx >= num_channels:
+                raise ValueError(f"Channel index {idx} is out of bounds for input with {num_channels} channels.")
+
+        # Select and return only the specified channels.
+        return data[:, target_channels, :, :]
+
     
     
     

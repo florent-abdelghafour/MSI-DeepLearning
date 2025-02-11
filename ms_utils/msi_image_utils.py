@@ -109,10 +109,12 @@ def save_datacube(image_info,output_directory):
         
     datacube=create_multispectral_array(image_info)
     datacube = np.transpose(datacube, (2, 0, 1))
+    if image_info['img type'] is not None and datacube.dtype != image_info['img type']:
+            raise TypeError(f"Mismatch in dtype! Expected {image_info['img type']}, but got {datacube.dtype}")
     
         
     with h5py.File(output_file, 'w') as hdf5_file:
-        hdf5_file.create_dataset('datacube', data=datacube)
+        hdf5_file.create_dataset('datacube', data=datacube, dtype=datacube.dtype,compression="gzip", compression_opts=9)
         metadata_group = hdf5_file.create_group('metadata')
         for key, value in image_info.items():
             if key =='image_paths':

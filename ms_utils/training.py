@@ -47,7 +47,6 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
     model.to(device)
     
     
- 
     # early_stopping = EarlyStopping(save_path=save_path) if early_stop and save_path else None
     
     train_losses = []

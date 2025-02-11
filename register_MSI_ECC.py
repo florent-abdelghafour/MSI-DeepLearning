@@ -161,9 +161,7 @@ for class_folder, image_info_list in class_image_info.items():
                 sorted_bands = np.sort(list_bands)
                 sorted_registered_bands = [registered_bands[i] for i in sorted_indices]
                 registered_image = np.dstack(sorted_registered_bands)
-                
-        
-            
+                     
                 image_name = image_data['name']
                 par_fold, org = os.path.split(base_directory)
                 for j, band in enumerate(sorted_bands):

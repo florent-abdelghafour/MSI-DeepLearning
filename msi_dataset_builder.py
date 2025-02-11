@@ -58,9 +58,6 @@ if __name__ == "__main__":
         
         for name,image_info in zip(dataset_info.keys(),dataset_info.values()):
             image_info['image_paths'] = sorted(image_info['image_paths'], key=lambda path: extract_numeric_part(path))  
-            print(image_info)  
-            print(name) 
-           
         
 
     output_directory =   os.path.join(os.path.dirname(dataset_path), "data_cube")

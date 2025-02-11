@@ -6,7 +6,7 @@ import torch
 
 wavelengths= [405, 430, 450, 490, 525, 550, 560, 570, 630, 650, 685, 710, 735, 850]
 
-dataset_root = "D:\\data_citrus\\registered_ecc\\data_cube_2"
+dataset_root = "D:\\data_citrus\\data_cube_2"
 
 dataset = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"size": (800, 800)})
 dataloader = DataLoader(dataset)

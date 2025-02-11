@@ -93,7 +93,7 @@ pil_mode_to_np_type = {
 }
 ###############################################################################
 
-dataset_path ="D:\\data_citrus\\registered_ecc\\data_raw"
+dataset_path ="D:\\data_citrus\\data_raw"
 dataset_info = {}                                                              # Initialize an empty dictionary to store information
 
 if  check_dir(dataset_path):
@@ -113,7 +113,7 @@ if  check_dir(dataset_path):
                   for filename in os.listdir(band_path):                 
                     name, ext = os.path.splitext(filename)                     # Split the filename into name and extension parts
                     base_name = name.split('.')[0]     
-                    print(base_name)              
+                    # print(base_name)              
                     image_path = os.path.join(band_path, filename)
                     
                     if is_supported_image(image_path):
@@ -151,8 +151,7 @@ if not os.path.exists(output_directory):
     os.makedirs(output_directory)
               
     
-for image_info in dataset_info.values():
-        
+for i,image_info in enumerate(dataset_info.values()):
         output_class_directory = os.path.join(output_directory,image_info['class'])
         if not os.path.exists(output_class_directory):
             os.makedirs(output_class_directory)
@@ -168,11 +167,16 @@ for image_info in dataset_info.values():
         datacube=create_multispectral_array(image_info)
         datacube = np.transpose(datacube, (2, 0, 1))
         
-        print(datacube.shape)
+        if image_info['img type'] is not None and datacube.dtype != image_info['img type']:
+            raise TypeError(f"Mismatch in dtype! Expected {image_info['img type']}, but got {datacube.dtype}")
+        
+        # print(datacube.shape)
+        # print(datacube.dtype)
         
             
         with h5py.File(output_file, 'w') as hdf5_file:
-            hdf5_file.create_dataset('datacube', data=datacube)
+            print(datacube.dtype)
+            hdf5_file.create_dataset('datacube', data=datacube, dtype=datacube.dtype,compression="gzip", compression_opts=9)
             metadata_group = hdf5_file.create_group('metadata')
             for key, value in image_info.items():
                 if isinstance(value, list):
