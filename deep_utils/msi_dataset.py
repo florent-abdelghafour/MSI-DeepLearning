@@ -28,18 +28,20 @@ class MSI_Dataset(Dataset):
         self.data_info = self.build_data_info()
         
         if transform is None:
-            self.transform = []
+            self.transforms = []
         elif isinstance(transform, list):
             self.transforms = transform
         else:
-            self.transform = [transform]
+            self.transforms = [transform]
 
         self.transforms_dict = {
             'resize': self.resize_transform ,
             'v index': self.vegetation_index_transform,        
         }
         
-    
+         # Initialize transform_args
+        self.transform_args = transform_args if transform_args is not None else {}
+
         
     def build_data_info(self):
         """
@@ -98,8 +100,8 @@ class MSI_Dataset(Dataset):
         with h5py.File(file_path, "r") as f:
             datacube = torch.tensor(f["datacube"][:], dtype=torch.float32)
         
-        if self.transform:
-            datacube = self.apply_transform(datacube)
+        if self.transforms:
+            datacube = self.apply_transforms(datacube)
             
         # metadata_group = f['metadata']
 

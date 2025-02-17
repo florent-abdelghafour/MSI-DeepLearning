@@ -6,13 +6,13 @@ import torch
 
 wavelengths= [405, 430, 450, 490, 525, 550, 560, 570, 630, 650, 685, 710, 735, 850]
 
-dataset_root = "D:\\data_citrus\\data_cube_2"
+dataset_root = "D:\\data_citrus\\data_cube"
 
-dataset = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"size": (800, 800)})
+dataset = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"size": (1200, 1200)})
 dataloader = DataLoader(dataset)
 
 batch_size=1
-num_samples = 100
+num_samples = 20
 
 for idx, batch in enumerate(dataloader):
     if idx<5:
