@@ -11,15 +11,16 @@ import matplotlib.pyplot as plt
 
 dataset_root = "D:\\data_citrus\\data_cube"
 
-citrus_data  = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"size": (1200, 1200)})
+citrus_data  = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"size": (600,600)})
 dataloader = DataLoader(citrus_data )
 
-batch_size = 4
-EPOCHS=10
+NB_CH =14
+batch_size = 16
+EPOCHS=20
 NW=0
-LR = 0.001
-WD = 0.0015
-model_type ='ResNet18'
+LR = 0.01
+WD = 0.015
+model_type ='ResNet18_all_ch'
 
 seed=42
 torch.manual_seed(seed)
@@ -64,7 +65,7 @@ base_path = os.path.dirname(dataset_root) + f"/figures/{model_type}/{labs}"
 if not os.path.exists(base_path):
     os.makedirs(base_path)
 
-model = ResNet18(in_channel=14,num_classes=num_classes,head='mlp')
+model = ResNet18(in_channel=NB_CH,num_classes=num_classes,head='mlp')
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=WD)
 

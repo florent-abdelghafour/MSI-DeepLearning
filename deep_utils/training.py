@@ -4,8 +4,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import datetime
-            
-                     
+                    
 ###############################################################################
 def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, save_path=None, epoch_save_step =None, scheduler=None):
     
@@ -15,8 +14,7 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
     if save_path:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         best_model_path = save_path + f'_best.pth'
-        
-        
+         
     train_losses = []
     val_losses = []
     val_metrics = []
@@ -86,16 +84,14 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
         all_targets = torch.cat(tar, dim=0)
         metrics = []
         
-    
         F1 = torcheval.metrics.MulticlassF1Score()
-        F1.update(torch.argmax(all_targets, dim=1), torch.argmax(all_outputs, dim=1))
+        F1.update(all_targets, torch.argmax(all_outputs, dim=1))
         metrics = F1.compute()
         val_metrics.append(metrics)
-
         
         train_loss_str = f'{epoch_loss: .4f}'
         val_loss_str = f'{val_loss: .4f}'
-        val_acc_str = f'{accuracies: .4f}'
+        val_acc_str = f'{accuracy: .4f}'
         metric_str =  f'F1 Score: {metrics:.4f}'
         
         msg = f'Epoch {epoch + 1}/{num_epochs} | Train Losses: {train_loss_str} | Validation Losses: {val_loss_str} | Val acc: {val_acc_str} | {metric_str}\n'
@@ -121,9 +117,16 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
     with open(save_path + "_telemetry.txt", "a") as myfile:
             myfile.write(f'best epoch: {best_epoch} for F1 = {best_val_metric}')
 
+    results = {
+    'train_losses': train_losses,
+    'val_losses': val_losses,
+    'val_metrics': val_metrics,
+    'accuracies': accuracies,
+    'best_epoch': best_epoch
+    }
 
     if save_path:
-        return train_losses, val_losses, val_metrics , best_model_path,best_epoch
-    else :
-        return train_losses, val_losses, val_metrics
+        results['best_model_path'] = best_model_path
+   
+    return results
 ###############################################################################
