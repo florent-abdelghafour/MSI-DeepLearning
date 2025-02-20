@@ -11,11 +11,11 @@ import matplotlib.pyplot as plt
 
 dataset_root = "D:\\data_citrus\\data_cube"
 
-citrus_data  = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"size": (600,600)})
+citrus_data  = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"size": (640,640)})
 dataloader = DataLoader(citrus_data )
 
 NB_CH =14
-batch_size = 16
+batch_size = 12
 EPOCHS=20
 NW=0
 LR = 0.01
