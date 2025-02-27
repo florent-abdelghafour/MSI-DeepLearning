@@ -16,7 +16,7 @@ dataloader = DataLoader(citrus_data )
 NB_CH =14
 batch_size = 4 
 IP=46 # MAX = 64 
-EPOCHS=50
+EPOCHS=20
 NW=0 #   -----------0 for windows ~20 ore more on Linux depending on CPU - GPU I/O-----------------------
 LR = 0.001
 WD = 0.015
@@ -65,7 +65,11 @@ if not os.path.exists(base_path):
     os.makedirs(base_path)
 
 model = ResNet18(in_channel=NB_CH,num_classes=num_classes,head_type='linear',in_planes =IP,zero_init_residual=False)
-criterion = nn.CrossEntropyLoss()
+
+class_counts = torch.tensor(citrus_data.class_counts, dtype=torch.float32)
+class_weights = class_counts / class_counts.sum()
+class_weights = class_weights.to(model.device)
+criterion = nn.CrossEntropyLoss(weight=class_weights)#
 optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=WD)
 
 results= train(model, optimizer, criterion, cal_loader, val_loader, 

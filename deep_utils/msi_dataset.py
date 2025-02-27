@@ -25,8 +25,9 @@ class MSI_Dataset(Dataset):
         self.classes=[]
         self.labels = []  
         self.label_encoder = LabelEncoder()
-        self.data_info = self.build_data_info()
         self.class_counts={}
+        self.data_info = self.build_data_info()
+        
         
         if transform is None:
             self.transforms = []
@@ -64,7 +65,10 @@ class MSI_Dataset(Dataset):
                 continue
             
             unique_classes.add(class_folder)
-            self.class_counts[class_folder] = 0
+            class_folder = class_folder.strip()
+            
+            if class_folder not in class_counts:
+                class_counts[class_folder] = 0 
             
             for sample_folder in os.listdir(class_path):
                 sample_path = os.path.join(class_path, sample_folder)
