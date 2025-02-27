@@ -3,6 +3,7 @@ import h5py
 from torch.utils.data import Dataset
 from sklearn.preprocessing import LabelEncoder
 import torch
+import numpy as np
 
 
 class MSI_Dataset(Dataset):
@@ -21,11 +22,11 @@ class MSI_Dataset(Dataset):
                     }
         """
         self.root_dir = root_dir
-        
         self.classes=[]
         self.labels = []  
         self.label_encoder = LabelEncoder()
         self.data_info = self.build_data_info()
+        self.class_counts={}
         
         if transform is None:
             self.transforms = []
@@ -53,11 +54,17 @@ class MSI_Dataset(Dataset):
                   - 'label': Class label extracted from the folder name.
         """
         data_info = []
+        unique_classes = set()
+        labels = []
+        class_counts = {}
+        
         for class_folder in os.listdir(self.root_dir):
-            self.classes.append(class_folder)
             class_path = os.path.join(self.root_dir, class_folder)
             if not os.path.isdir(class_path):
                 continue
+            
+            unique_classes.add(class_folder)
+            self.class_counts[class_folder] = 0
             
             for sample_folder in os.listdir(class_path):
                 sample_path = os.path.join(class_path, sample_folder)
@@ -71,8 +78,18 @@ class MSI_Dataset(Dataset):
                         "label": class_folder  # Folder name as the label
                     })
                     
-                    self.labels.append(class_folder)
-        self.label_encoder.fit(self.labels)                 
+                    labels.append(class_folder)
+                    class_counts[class_folder] += 1
+                    
+        self.classes = sorted(unique_classes)
+        self.labels = np.array(labels)
+        self.class_counts = [class_counts[cls] for cls in self.classes]
+        
+        if len(self.labels) > 0:
+            self.label_encoder.fit(self.labels)
+            for sample in data_info:
+                sample["encoded_label"] = self.label_encoder.transform([sample["label"]])[0]
+                    
         return data_info
     
     def __len__(self):
@@ -93,12 +110,13 @@ class MSI_Dataset(Dataset):
         """
         sample_data_info = self.data_info[idx]
         file_path = sample_data_info["file_path"]
-        label_str = sample_data_info["label"]
-        label = torch.tensor(self.label_encoder.transform([label_str])[0], dtype=torch.long)
+        label = torch.tensor(sample_data_info["encoded_label"]).to(torch.long)
         
         # Load the .h5 file
         with h5py.File(file_path, "r") as f:
-            datacube = torch.tensor(f["datacube"][:], dtype=torch.float32)
+            datacube = f["datacube"][:]
+        datacube = torch.tensor(datacube, dtype=torch.float32)
+            
         
         if self.transforms:
             datacube = self.apply_transforms(datacube)

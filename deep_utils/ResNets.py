@@ -76,18 +76,27 @@ def ResNet101(**kwargs):
      
         
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, in_channel=14,num_classes=2,zero_init_residual=False,head='linear'):
+    def __init__(self, block, num_blocks, in_channel=14,num_classes=2,zero_init_residual=False,head_type='linear',in_planes = 64):
         super(ResNet, self).__init__()
-        self.in_planes = 64
+        self.in_planes = in_planes
+        self.head_type=head_type
+        self.num_classes= num_classes
+        self.head_dim= None
+        
         self.conv1 = nn.Sequential(
-                        nn.Conv2d(in_channel, self.in_planes, kernel_size = 7, stride = 2, padding = 3),
-                        nn.BatchNorm2d(self.in_planes ),
-                        nn.ReLU())
-        self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
-        self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))        
+                        nn.Conv2d(in_channel, self.in_planes, kernel_size=7, stride=2, padding=3, bias=False),
+                        nn.BatchNorm2d(self.in_planes),
+                        nn.ReLU(inplace=True),
+                        nn.MaxPool2d(kernel_size=3, stride=2, padding=1) )
+        
+        
+        self.layer1 = self._make_layer(block, self.in_planes, num_blocks[0], stride=1)
+        self.layer2 = self._make_layer(block, 2 * self.in_planes, num_blocks[1], stride=2)
+        self.layer3 = self._make_layer(block, 4 * self.in_planes, num_blocks[2], stride=2)
+        self.layer4 = self._make_layer(block, 8 * self.in_planes, num_blocks[3], stride=2)
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))   
+        
+        self.head = None     
         
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -103,19 +112,7 @@ class ResNet(nn.Module):
                 elif isinstance(m, ResidualBlock):
                     nn.init.constant_(m.bn2.weight, 0)
                 
-        
-        if head=='linear':
-            self.head = nn.Linear(512*block.expansion, num_classes)
-            
-        elif head == 'mlp':
-            dim_in =512*block.expansion
-            self.head = nn.Sequential(
-                nn.Linear(dim_in, dim_in),
-                nn.ReLU(inplace=True),
-                nn.Linear(dim_in, num_classes)
-            )
-        
-        
+       
        
     def _make_layer(self, block, out_channels, num_blocks, stride):
         strides = [stride] + [1] * (num_blocks - 1)
@@ -125,36 +122,41 @@ class ResNet(nn.Module):
             layers.append(block(self.in_planes, out_channels, stride))
             self.in_planes = out_channels * block.expansion
         return nn.Sequential(*layers) 
-    
-    model_dict = {
-    'ResNet18': [ResNet18, 512],
-    'ResNet34': [ResNet34, 512],
-    'ResNet50': [ResNet50, 2048],
-    'ResNet101': [ResNet101, 2048]}
-
         
      
     def forward(self, x):
-        out = self.conv1(x)
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
-        out = self.avgpool(out)
-        out = torch.flatten(out, 1)
-        out = self.head(out)
-        return out    
+        x = self.conv1(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)  # Final ResNet block
+
+        x = self.avgpool(x)  # Apply Global Average Pooling
+        x = torch.flatten(x, 1)  # Flatten before MLP head
+        
+        if self.head is None:
+            self.head_dim = x.shape[1]
+            if self.head_type == 'linear':
+                self.head = nn.Linear(self.head_dim, self.num_classes).to(x.device)
+            elif self.head_type == 'mlp':
+                self.head = nn.Sequential(
+                    nn.Linear(self.head_dim, self.head_dim),
+                    nn.ReLU(),
+                    nn.Linear(self.head_dim, self.num_classes)
+                ).to(x.device)
+
+        return self.head(x)
        
-    def predict(self, images):
-            # Convert the images to PyTorch tensors and move them to the correct device
-            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-            image_tensors = (images).to(device)
+    # def predict(self, images):
+    #         device = next(self.parameters()).device  
+    #         image_tensors = images.to(device)
+    #         self.eval() 
     
-            # Pass the images through the model to get predictions
-            with torch.no_grad():
-                self.eval()  # Set the model to evaluation mode
-                outputs = self(image_tensors)
-                probabilities = F.softmax(outputs, dim=1)  # Convert raw scores to probabilities
-            return probabilities.cpu().numpy()  # Move predictions to CPU and convert to numpy array 
+    #         # Pass the images through the model to get predictions
+    #         with torch.no_grad():
+    #             self.eval()  # Set the model to evaluation mode
+    #             outputs = self(image_tensors)
+    #             probabilities = F.softmax(outputs, dim=1)  # Convert raw scores to probabilities
+    #         return probabilities
         
         

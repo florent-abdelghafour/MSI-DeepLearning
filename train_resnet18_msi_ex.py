@@ -1,5 +1,5 @@
 from torch.utils.data import  DataLoader,random_split
-from deep_utils import MSI_Dataset,ResNet18, ResNet34
+from deep_utils import MSI_Dataset,ResNet18
 from deep_utils import train
 import torch
 import torch.optim as optim
@@ -10,15 +10,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 dataset_root = "D:\\data_citrus\\data_cube"
-
-citrus_data  = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"size": (640,640)})
+citrus_data  = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"resize": {"size": (1200, 1200)}})
 dataloader = DataLoader(citrus_data )
 
 NB_CH =14
-batch_size = 12
-EPOCHS=20
-NW=0
-LR = 0.01
+batch_size = 4 
+IP=46 # MAX = 64 
+EPOCHS=50
+NW=0 #   -----------0 for windows ~20 ore more on Linux depending on CPU - GPU I/O-----------------------
+LR = 0.001
 WD = 0.015
 model_type ='ResNet18_all_ch'
 
@@ -29,7 +29,6 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-
 
 nb_samples = len(citrus_data)
 classes= citrus_data.classes
@@ -65,7 +64,7 @@ base_path = os.path.dirname(dataset_root) + f"/figures/{model_type}/{labs}"
 if not os.path.exists(base_path):
     os.makedirs(base_path)
 
-model = ResNet18(in_channel=NB_CH,num_classes=num_classes,head='mlp')
+model = ResNet18(in_channel=NB_CH,num_classes=num_classes,head_type='linear',in_planes =IP,zero_init_residual=False)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=WD)
 
@@ -81,8 +80,8 @@ best_epoch = results['best_epoch']
 if 'best_model_path' in results:
     best_model_path = results['best_model_path']
 
-tl = torch.stack(train_losses).numpy()
-vl = torch.stack(val_losses).numpy()
+tl = np.array(train_losses)
+vl = np.array(val_losses)
 f1= np.array(val_f1)
 
 fig, ax1 = plt.subplots(figsize=(12, 6))

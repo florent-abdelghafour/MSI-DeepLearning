@@ -20,7 +20,7 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
     val_metrics = []
     accuracies = []
     
-    best_val_metric = np.inf 
+    best_val_metric = -np.inf 
     best_epoch=-1
     
     if save_path:
@@ -78,7 +78,7 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
 
         accuracy = correct_predictions / total_samples
         val_loss = loss / len(val_loader.dataset)
-        val_losses.append(val_loss)    
+        val_losses.append((val_loss.detach().cpu()).numpy())    
         accuracies.append(accuracy)
         all_outputs = torch.cat(out, dim=0)
         all_targets = torch.cat(tar, dim=0)
@@ -87,7 +87,7 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
         F1 = torcheval.metrics.MulticlassF1Score()
         F1.update(all_targets, torch.argmax(all_outputs, dim=1))
         metrics = F1.compute()
-        val_metrics.append(metrics)
+        val_metrics.append(metrics.numpy())
         
         train_loss_str = f'{epoch_loss: .4f}'
         val_loss_str = f'{val_loss: .4f}'
@@ -107,8 +107,8 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
                 
                 
         # Save the best model based on validation metric
-        current_val_metric =  val_loss.mean()
-        if save_path and ( current_val_metric < best_val_metric) :
+        current_val_metric =  metrics
+        if save_path and ( current_val_metric > best_val_metric) :
             best_val_metric = current_val_metric
             torch.save(model.state_dict(), best_model_path)
             best_epoch = epoch + 1
