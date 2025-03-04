@@ -8,19 +8,21 @@ import torch.nn as nn
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import json
 
 dataset_root = "D:\\data_citrus\\data_cube"
-citrus_data  = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"resize": {"size": (640, 640)}})
+citrus_data  = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"resize": {"size": (800, 800)}})
 dataloader = DataLoader(citrus_data )
 
 NB_CH =14
 batch_size = 4 
-IP=46 # MAX = 64 
-EPOCHS=50
-NW=0 #   -----------0 for windows ~20 ore more on Linux depending on CPU - GPU I/O-----------------------
+IP=16 # MAX = 64 
+EPOCHS=2
+# NW=0 #   -----------0 for windows ~20 ore more on Linux depending on CPU - GPU I/O-----------------------
+NW = min(4, os.cpu_count() - 1) if os.name != 'nt' else 0
 LR = 0.0001
 WD = 0.015
-model_type ='ResNet18_all_ch_2'
+model_type ='ResNet18_all_ch_dummy'
 
 seed=42
 torch.manual_seed(seed)
@@ -56,19 +58,21 @@ test_loader= DataLoader(test_dataset,batch_size=batch_size, shuffle=False, num_w
 
 labs= '_'.join(classes) 
 
-save_path = os.path.dirname(dataset_root) + f"/models/{model_type}/{labs}"
+save_path = os.path.join(os.path.dirname(dataset_root), "models", model_type, labs)
 if not os.path.exists(save_path):
     os.makedirs(save_path)
     
-base_path = os.path.dirname(dataset_root) + f"/figures/{model_type}/{labs}"
+base_path = os.path.join(os.path.dirname(dataset_root), "figures", model_type, labs)
 if not os.path.exists(base_path):
     os.makedirs(base_path)
 
 model = ResNet18(in_channel=NB_CH,num_classes=num_classes,head_type='mlp',in_planes =IP,zero_init_residual=False)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class_counts = torch.tensor(citrus_data.class_counts, dtype=torch.float32)
+
 class_weights = class_counts / class_counts.sum()
 class_weights = class_weights.to(device)
+
 criterion = nn.CrossEntropyLoss(weight=class_weights)#
 optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=WD)
 
@@ -97,12 +101,12 @@ ax1.legend(loc='upper right', bbox_to_anchor=(1, 0.9), fancybox=True, shadow=Tru
 
 ax2 = ax1.twinx()
 ax2.tick_params(axis='y', labelcolor='tab:green')
-ax2.set_ylabel('R2 Score', color='tab:green')
-ax2.plot(f1, label=f'R2 Score', linestyle='--',color='tab:green')
-ax2.legend(loc='upper right', bbox_to_anchor=(1, 0.75), fancybox=True, shadow=True, fontsize=12)
+ax2.set_ylabel('F1 Score', color='tab:green')
+ax2.plot(f1, label=f'F1 Score', linestyle='--',color='tab:green')
 
 ax1.grid(True)
 plt.title(f'Training performances')
+fig.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=3, fancybox=True, shadow=True, fontsize=12)
 # plt.show(block=False)
 
 pdf_path =base_path+ f"/cross_entropy_{labs}.pdf"
@@ -112,3 +116,34 @@ plt.savefig(pdf_path, format='pdf')
 # with open(pickle_path, 'wb') as f:
 #     pickle.dump(fig, f)
 
+plt.close(fig) 
+
+json_path = os.path.join(save_path, f"training_results_{labs}.json")
+results["training_parameters"] = {
+    "dataset_root": dataset_root,
+    "batch_size": batch_size,
+    "epochs": EPOCHS,
+    "learning_rate": LR,
+    "weight_decay": WD,
+    "num_workers": NW,
+    "nb_channels": NB_CH,
+    "in_planes": IP,
+    "model_type": model_type,
+    "seed": seed,
+    "device": str(device),
+    "num_classes": num_classes,
+    "save_path": save_path,
+    "model_name": model.__class__.__name__
+}
+
+results_json = {
+    key: (
+        [v.tolist() if isinstance(v, (np.ndarray, torch.Tensor)) else v for v in value] 
+        if isinstance(value, list) else 
+        (value.tolist() if isinstance(value, (np.ndarray, torch.Tensor)) else value)
+    )
+    for key, value in results.items()
+}
+
+with open(json_path, "w") as f:  
+    json.dump(results_json, f, indent=4)  
