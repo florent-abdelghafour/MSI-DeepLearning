@@ -11,18 +11,20 @@ import matplotlib.pyplot as plt
 import json
 
 dataset_root = "D:\\data_citrus\\data_cube"
-citrus_data  = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"resize": {"size": (800, 800)}})
-dataloader = DataLoader(citrus_data )
 
 NB_CH =14
 batch_size = 4 
 IP=16 # MAX = 64 
-EPOCHS=2
+EPOCHS=500
 # NW=0 #   -----------0 for windows ~20 ore more on Linux depending on CPU - GPU I/O-----------------------
 NW = min(4, os.cpu_count() - 1) if os.name != 'nt' else 0
 LR = 0.0001
 WD = 0.015
-model_type ='ResNet18_all_ch_dummy'
+size = (1200, 1200)
+model_type ='ResNet18_all_ch_4'
+
+citrus_data  = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"resize": {"size": size}})
+dataloader = DataLoader(citrus_data )
 
 seed=42
 torch.manual_seed(seed)
@@ -54,7 +56,7 @@ cal_dataset, val_dataset = random_split(train_dataset, [cal_size, val_size],
 # Create data loaders
 cal_loader = DataLoader(cal_dataset, batch_size=batch_size, shuffle=True, num_workers=NW)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=NW)
-test_loader= DataLoader(test_dataset,batch_size=batch_size, shuffle=False, num_workers=NW)
+# test_loader= DataLoader(test_dataset,batch_size=batch_size, shuffle=False, num_workers=NW)
 
 labs= '_'.join(classes) 
 
@@ -133,7 +135,8 @@ results["training_parameters"] = {
     "device": str(device),
     "num_classes": num_classes,
     "save_path": save_path,
-    "model_name": model.__class__.__name__
+    "model_name": model.__class__.__name__,
+    "size" : list(size)
 }
 
 results_json = {

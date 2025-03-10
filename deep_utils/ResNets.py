@@ -60,28 +60,16 @@ class Bottleneck(nn.Module):
         out = F.relu(out)
         
         return out
-
-
-def ResNet18(**kwargs):
-    return ResNet(ResidualBlock, [2, 2, 2, 2], **kwargs)
-
-def ResNet34(**kwargs):
-    return ResNet(ResidualBlock, [3, 4, 6, 3], **kwargs)
-
-def ResNet50(**kwargs):
-    return ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
-
-def ResNet101(**kwargs):
-    return ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
      
         
 class ResNet(nn.Module):
     def __init__(self, block, num_blocks, in_channel=14,num_classes=2,zero_init_residual=False,head_type='linear',in_planes = 64):
         super(ResNet, self).__init__()
         self.in_planes = in_planes
+        self.initial_planes = in_planes  
         self.head_type=head_type
         self.num_classes= num_classes
-        self.head_dim= None
+
         
         self.conv1 = nn.Sequential(
                         nn.Conv2d(in_channel, self.in_planes, kernel_size=7, stride=2, padding=3, bias=False),
@@ -90,13 +78,22 @@ class ResNet(nn.Module):
                         nn.MaxPool2d(kernel_size=3, stride=2, padding=1) )
         
         
-        self.layer1 = self._make_layer(block, self.in_planes, num_blocks[0], stride=1)
-        self.layer2 = self._make_layer(block, 2 * self.in_planes, num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(block, 4 * self.in_planes, num_blocks[2], stride=2)
-        self.layer4 = self._make_layer(block, 8 * self.in_planes, num_blocks[3], stride=2)
+        self.layer1 = self._make_layer(block, self.initial_planes, num_blocks[0], stride=1)
+        self.layer2 = self._make_layer(block, 2 * self.initial_planes, num_blocks[1], stride=2)
+        self.layer3 = self._make_layer(block, 4 * self.initial_planes, num_blocks[2], stride=2)
+        self.layer4 = self._make_layer(block, 8 * self.initial_planes, num_blocks[3], stride=2)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))   
         
-        self.head = None     
+        self.head_dim = self.initial_planes * 8 * block.expansion
+        if self.head_type == 'linear':
+            self.head = nn.Linear(self.head_dim, self.num_classes)
+        elif self.head_type == 'mlp':
+            self.head = nn.Sequential(
+                nn.Linear(self.head_dim, self.head_dim),
+                nn.ReLU(),
+                nn.Linear(self.head_dim, self.num_classes)
+            )
+    
         
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -130,33 +127,23 @@ class ResNet(nn.Module):
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)  # Final ResNet block
-
         x = self.avgpool(x)  # Apply Global Average Pooling
         x = torch.flatten(x, 1)  # Flatten before MLP head
         
-        if self.head is None:
-            self.head_dim = x.shape[1]
-            if self.head_type == 'linear':
-                self.head = nn.Linear(self.head_dim, self.num_classes).to(x.device)
-            elif self.head_type == 'mlp':
-                self.head = nn.Sequential(
-                    nn.Linear(self.head_dim, self.head_dim),
-                    nn.ReLU(),
-                    nn.Linear(self.head_dim, self.num_classes)
-                ).to(x.device)
-
         return self.head(x)
-       
-    # def predict(self, images):
-    #         device = next(self.parameters()).device  
-    #         image_tensors = images.to(device)
-    #         self.eval() 
-    
-    #         # Pass the images through the model to get predictions
-    #         with torch.no_grad():
-    #             self.eval()  # Set the model to evaluation mode
-    #             outputs = self(image_tensors)
-    #             probabilities = F.softmax(outputs, dim=1)  # Convert raw scores to probabilities
-    #         return probabilities
-        
+  
+def ResNet18(**kwargs):
+    return ResNet(ResidualBlock, [2, 2, 2, 2], **kwargs)
+
+
+def ResNet34(**kwargs):
+    return ResNet(ResidualBlock, [3, 4, 6, 3], **kwargs)
+
+
+def ResNet50(**kwargs):
+    return ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
+
+
+def ResNet101(**kwargs):
+    return ResNet(Bottleneck, [3, 4, 23, 3], **kwargs) 
         
