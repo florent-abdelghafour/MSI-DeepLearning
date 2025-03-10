@@ -47,8 +47,10 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
             loss.backward()
             optimizer.step()
         
-            running_loss += loss.item()
-        epoch_loss = running_loss / len(train_loader.dataset)
+            running_loss += loss.item() * targets.size(0)
+            total_samples += targets.size(0)
+            
+        epoch_loss = running_loss / total_samples
         if scheduler:
             scheduler.step(epoch_loss)
         train_losses.append(epoch_loss) 
@@ -56,7 +58,9 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
            
         # Validation loop
         model.eval()
-        val_loss = torch.zeros(1, device=device) 
+        val_running_loss = 0.0
+        correct_predictions = 0
+        total_val_samples = 0
         
         out = []
         tar = []
@@ -68,16 +72,20 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
                 outputs = model(inputs)
                            
                 loss = criterion(outputs, targets)
-                _, predicted = torch.max(outputs.data, 1)
-                total_samples += targets.size(0)
-                correct_predictions += (predicted == targets).sum().item()
-    
+                val_running_loss += loss.item() * targets.size(0)
+                total_val_samples += targets.size(0)
+                val_loss = val_running_loss / total_val_samples
+                
+                outputs = torch.softmax(outputs, dim=1)
+                predictions = torch.argmax(outputs, dim=1)
+                correct_predictions += (predictions == targets).sum().item()
                 
                 out.append(outputs.detach().cpu())
                 tar.append(targets.detach().cpu())
 
-        accuracy = correct_predictions / total_samples
-        val_loss = loss / len(val_loader.dataset)
+        accuracy = correct_predictions / total_val_samples
+        val_loss = loss / total_val_samples
+        
         val_losses.append((val_loss.detach().cpu()).numpy())    
         accuracies.append(accuracy)
         all_outputs = torch.cat(out, dim=0)
@@ -113,7 +121,17 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
             torch.save(model.state_dict(), best_model_path)
             best_epoch = epoch + 1
             print(f'Model saved at epoch {epoch + 1} to {best_model_path}')
+            
 
+    if save_path:
+        last_model_path = save_path + '_last.pth'
+        torch.save(model.state_dict(), last_model_path)
+        print(f'Last model saved to {last_model_path}')
+        with open(save_path + "_telemetry.txt", "a") as myfile:
+            myfile.write(f'\nLast model saved to {last_model_path}\n')
+    else:
+        last_model_path = None
+        
     with open(save_path + "_telemetry.txt", "a") as myfile:
             myfile.write(f'best epoch: {best_epoch} for F1 = {best_val_metric}')
 
@@ -127,6 +145,7 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
 
     if save_path:
         results['best_model_path'] = best_model_path
+        results['last_model_path'] = last_model_path
    
     return results
 ###############################################################################
