@@ -14,14 +14,14 @@ dataset_root = "D:\\data_citrus\\data_cube"
 
 NB_CH =14
 batch_size = 4 
-IP=16 # MAX = 64 
-EPOCHS=500
+IP=32 # MAX = 64 
+EPOCHS=200
 # NW=0 #   -----------0 for windows ~20 ore more on Linux depending on CPU - GPU I/O-----------------------
 NW = min(4, os.cpu_count() - 1) if os.name != 'nt' else 0
 LR = 0.0001
 WD = 0.015
-size = (1200, 1200)
-model_type ='ResNet18_all_ch_4'
+size = (800, 800)
+model_type ='ResNet18_all_ch_6' # TO BE CHANGED AT EVERY RUN to save model, parames and perfs
 
 citrus_data  = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"resize": {"size": size}})
 dataloader = DataLoader(citrus_data )
