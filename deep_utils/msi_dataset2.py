@@ -6,8 +6,8 @@ import torch
 import numpy as np
 
 
-class MSI_Dataset(Dataset):
-    def __init__(self, root_dir, transform=None, transform_args=None, augment=None):
+class MSI_Dataset2(Dataset):
+    def __init__(self, root_dir, transform=None, transform_args=None):
         """
         Initialize the dataset.
         
@@ -27,7 +27,7 @@ class MSI_Dataset(Dataset):
         self.label_encoder = LabelEncoder()
         self.class_counts={}
         self.data_info = self.build_data_info()
-        
+        self.h5_files = {} 
         
         if transform is None:
             self.transforms = []
@@ -43,7 +43,7 @@ class MSI_Dataset(Dataset):
         
          # Initialize transform_args
         self.transform_args = transform_args if transform_args is not None else {}
-        self.augment = augment
+
         
     def build_data_info(self):
         """
@@ -116,18 +116,16 @@ class MSI_Dataset(Dataset):
         file_path = sample_data_info["file_path"]
         label = torch.tensor(sample_data_info["encoded_label"]).to(torch.long)
         
-        # Load the .h5 file
-        with h5py.File(file_path, "r") as f:
-            datacube = f["datacube"][:]
+        if file_path not in self.h5_files:
+            self.h5_files[file_path] = h5py.File(file_path, "r")
+        
+        datacube = self.h5_files[file_path]["datacube"][:]
         datacube = torch.tensor(datacube, dtype=torch.float32)
+
             
         
         if self.transforms:
             datacube = self.apply_transforms(datacube)
-            
-        # Apply augmentation if specified
-        if self.augment:
-            datacube = self.augment(datacube)
             
         # metadata_group = f['metadata']
 
