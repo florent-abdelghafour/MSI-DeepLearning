@@ -1,6 +1,6 @@
 from torch.utils.data import  DataLoader,random_split
 from deep_utils import MSI_Dataset,ResNet18
-from deep_utils import train
+from deep_utils import train, MSI_aug
 import torch
 import torch.optim as optim
 import torch.nn as nn
@@ -14,14 +14,14 @@ dataset_root = "D:\\data_citrus\\data_cube"
 
 NB_CH =14
 batch_size = 4 
-IP=32 # MAX = 64 
-EPOCHS=200
+IP=16 # MAX = 64 
+EPOCHS=5
 # NW=0 #   -----------0 for windows ~20 ore more on Linux depending on CPU - GPU I/O-----------------------
 NW = min(4, os.cpu_count() - 1) if os.name != 'nt' else 0
-LR = 0.0001
+LR = 0.1
 WD = 0.015
-size = (800, 800)
-model_type ='ResNet18_all_ch_6' # TO BE CHANGED AT EVERY RUN to save model, parames and perfs
+size = (600, 600)
+model_type ='ResNet18_all_ch_data_aug' # TO BE CHANGED AT EVERY RUN to save model, parames and perfs
 
 citrus_data  = MSI_Dataset(root_dir=dataset_root,transform='resize', transform_args={"resize": {"size": size}})
 dataloader = DataLoader(citrus_data )
@@ -50,8 +50,8 @@ train_dataset, test_dataset = random_split(citrus_data, [train_size, test_size],
 cal_dataset, val_dataset = random_split(train_dataset, [cal_size, val_size], 
                                         generator=torch.Generator().manual_seed(seed))
 
-# augmentation = data_augmentation(slope=slope, offset=offset, noise=noise, shift=shift)
-#  cal_dataset.dataset.preprocessing=augmentation
+augmentation = MSI_aug  ()
+cal_dataset.dataset.augment=augmentation
 
 # Create data loaders
 cal_loader = DataLoader(cal_dataset, batch_size=batch_size, shuffle=True, num_workers=NW)

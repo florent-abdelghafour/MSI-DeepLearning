@@ -74,7 +74,6 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
                 loss = criterion(outputs, targets)
                 val_running_loss += loss.item() * targets.size(0)
                 total_val_samples += targets.size(0)
-                val_loss = val_running_loss / total_val_samples
                 
                 outputs = torch.softmax(outputs, dim=1)
                 predictions = torch.argmax(outputs, dim=1)
@@ -84,9 +83,9 @@ def train(model, optimizer, criterion, train_loader, val_loader, num_epochs, sav
                 tar.append(targets.detach().cpu())
 
         accuracy = correct_predictions / total_val_samples
-        val_loss = loss / total_val_samples
+        val_loss = val_running_loss  / total_val_samples
         
-        val_losses.append((val_loss.detach().cpu()).numpy())    
+        val_losses.append(val_loss)    
         accuracies.append(accuracy)
         all_outputs = torch.cat(out, dim=0)
         all_targets = torch.cat(tar, dim=0)
